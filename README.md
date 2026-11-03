@@ -27,7 +27,7 @@ Default data mode is `mock` (`VITE_DATA_MODE=mock`). Nothing calls a real Supaba
 | Data fetching | TanStack Query | Cache + pagination for large opp sets |
 | Grid | Shared `DataGrid` (TanStack Virtual) | One windowed grid for all four tabs |
 | Data access | `CrmDataClient` interface | `MockCrmClient` for dev/CI; `SupabaseReadonlyClient` for real reads |
-| Styling | DESIGN.md tokens + Clay-grid CSS | Familiar docket look without shipping the original HTML |
+| Styling | **Attio-style visual system** (Inter, white/light-gray, blue accent) | Mockup in `docs/attio-mockup-reference.html` is the design spec. Attio is visual reference only — no Attio integration |
 | Proxy | `server/proxy.mjs` | Keeps privileged keys off the browser; GET + allowlisted read RPCs only |
 
 ```
