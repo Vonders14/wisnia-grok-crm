@@ -1,0 +1,788 @@
+/* Wisnia Clay Grid stylesheet.
+   Values are Clay.com's shipped tokens: nightshade greys, blueberry accent,
+   34px row content (+1px border), 36px header, 12px cells, 14px headers. */
+
+.cg {
+  --cg-row-h: 36px;
+  --cg-pitch: 37px;
+  --cg-header-h: 36px;
+  --cg-gutter-w: 56px;
+  --cg-border: #e6e8ec;        /* border-secondary / nightshade-200 */
+  --cg-border-faint: #eff1f3;  /* border-tertiary / nightshade-100 */
+  --cg-bg: #fff;
+  --cg-bg-alt: #f7f8f9;        /* bg-secondary / nightshade-50 */
+  --cg-text: #000;
+  --cg-text-soft: #3c414d;     /* content-secondary / nightshade-800 */
+  --cg-text-mute: #979da9;
+  --cg-accent: #0667d9;        /* border-selected / blueberry-600 */
+  --cg-accent-soft: #3ea2fd;   /* border-action / blueberry-400 */
+  --cg-accent-hot: #0382f7;    /* border-action-hover / blueberry-500 */
+  --cg-dupe: #fff7ea;
+  --cg-dupe-line: #f0ddbd;
+  --cg-dupe-text: #95621f;
+  height: 100%;
+  min-height: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.cg-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--cg-bg);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--cg-text);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- header ---- */
+
+.cg-header-wrap {
+  display: flex;
+  flex: 0 0 auto;
+  height: var(--cg-header-h);
+  background: var(--cg-bg-alt);
+  border-bottom: 1px solid var(--cg-border);
+}
+
+.cg-header-gutter {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  height: var(--cg-header-h);
+  background: var(--cg-bg-alt);
+  border-right: 3px solid var(--cg-border-faint);
+  color: var(--cg-text-mute);
+  cursor: pointer;
+  user-select: none;
+}
+.cg-header-gutter:hover { color: var(--cg-accent); }
+.cg-selall { font-size: 11px; }
+
+.cg-header-scroll { flex: 1; min-width: 0; overflow: hidden; }
+.cg-header { position: relative; display: flex; height: var(--cg-header-h); }
+
+.cg-th {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: var(--cg-header-h);
+  padding: 0 6px 0 8px;
+  background: var(--cg-bg-alt);
+  border-right: 1px solid var(--cg-border);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cg-text-soft);
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  /* Must stay visible: the resize handle intentionally overhangs the right edge by 7px.
+     overflow:hidden here clips it away and makes the column un-resizable. The title span
+     does its own truncation instead. */
+  overflow: visible;
+}
+.cg-th:hover { background: var(--cg-border-faint); }
+.cg-th.cg-frozen {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  border-right: 3px solid var(--cg-border-faint);
+}
+/* Clay's "+ Add column" lives at the right end of the header row, not in a toolbar.
+   Same 36px header cell so it sits flush, but no border seam and a lighter weight. */
+.cg-th.cg-addcol {
+  width: 132px;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0 10px;
+  border-right: 0;
+  color: var(--cg-text-mute);
+  font-weight: 500;
+}
+.cg-th.cg-addcol:hover { background: var(--cg-border-faint); color: var(--cg-accent); }
+.cg-addcol .cg-caret { font-size: 11px; opacity: .8; }
+
+/* Always-visible pin on the right edge of the header (not after column 138). */
+.cg-addcol-pin {
+  flex: 0 0 auto;
+  align-self: stretch;
+  height: var(--cg-header-h);
+  padding: 0 12px;
+  border: 0;
+  border-left: 1px solid var(--cg-border);
+  background: var(--cg-bg-alt);
+  color: var(--cg-text-mute);
+  font: 500 13px/var(--cg-header-h) inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  z-index: 5;
+}
+.cg-addcol-pin:hover { color: var(--cg-accent); background: var(--cg-border-faint); }
+.cg-addcol-pin[hidden] { display: none !important; }
+.cg-addcol-pin .cg-caret { font-size: 11px; opacity: .8; }
+.cg-th.cg-sorted { color: var(--cg-accent); }
+.cg-th.cg-dragging { opacity: .4; background: var(--cg-border-faint); }
+
+.cg-grip {
+  flex: 0 0 auto;
+  margin-right: 5px;
+  color: #c3c7ce;
+  font-size: 11px;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+.cg-grip:hover { color: var(--cg-accent-hot); }
+.cg-grip:active { cursor: grabbing; }
+
+.cg-type { flex: 0 0 auto; margin-right: 6px; color: var(--cg-text-mute); font-size: 11px; font-weight: 700; }
+.cg-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cg-sort { flex: 0 0 auto; width: 12px; font-size: 8px; color: var(--cg-accent); text-align: center; }
+.cg-menu-btn { flex: 0 0 auto; width: 14px; text-align: center; color: var(--cg-text-mute); font-size: 12px; }
+.cg-menu-btn:hover { color: var(--cg-text); }
+
+/* Resize: 15px grab zone, 4px visible bar, no glyph of its own. */
+.cg-resize {
+  position: absolute;
+  top: 0;
+  right: -7px;
+  width: 15px;
+  height: 100%;
+  cursor: ew-resize;
+  /* Above the next header so the overhanging half of the grab zone stays clickable. */
+  z-index: 8;
+  touch-action: none;
+}
+.cg-resize:after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background .1s ease-in-out;
+}
+.cg-resize:hover:after { background: var(--cg-accent-soft); }
+
+/* ---- run-status row (Clay: 24px, "%" gutter, one progress bar per column) ---- */
+
+.cg-status-wrap {
+  display: flex;
+  flex: 0 0 auto;
+  height: 24px;
+  background: var(--cg-bg);
+  border-bottom: 1px solid var(--cg-border);
+}
+.cg-status-wrap[hidden] { display: none; }
+.cg-status-gutter {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  height: 24px;
+  background: var(--cg-bg);
+  border-right: 3px solid var(--cg-border-faint);
+  color: var(--cg-text-mute);
+  font-size: 12px;
+  user-select: none;
+}
+.cg-status-scroll { flex: 1; min-width: 0; overflow: hidden; }
+.cg-status { display: flex; height: 24px; }
+.cg-status-cell {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-right: 1px solid var(--cg-border);
+  background: var(--cg-bg);
+  box-sizing: border-box;
+}
+.cg-status-cell.cg-frozen { position: sticky; left: 0; z-index: 2; border-right: 3px solid var(--cg-border-faint); }
+.cg-status-bar { display: block; flex: 1; min-width: 24px; height: 3px; border-radius: 2px; background: var(--cg-border-faint); overflow: hidden; }
+.cg-status-bar i { display: block; height: 100%; background: #84e7a5; }
+.cg-status-cell.full .cg-status-bar i { background: #078a52; }
+.cg-status-pct { flex: 0 1 auto; min-width: 0; max-width: 78%; margin-left: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--cg-text-mute); font-variant-numeric: tabular-nums; }
+
+/* ---- tag pills (Clay's 8 field colors) ---- */
+
+.cg-tag {
+  display: inline-block;
+  height: 18px;
+  line-height: 16px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.cg-tags { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; overflow: hidden; vertical-align: middle; }
+.cg-tags .cg-tag { min-width: 0; flex: 0 1 auto; }
+.cg-tag-more { flex: 0 0 auto; color: var(--cg-text-mute); font-size: 11px; font-weight: 600; }
+.cg-wrap .cg-tags { flex-wrap: wrap; align-content: flex-start; overflow: visible; }
+/* Unwrapped rows remain compact, but hovering a multi-select exposes every chip over
+   neighbouring cells instead of silently clipping the later values. */
+.cg-td:hover:has(.cg-tags) { overflow: visible; z-index: 4; }
+.cg-td:hover .cg-tags { max-width: none; overflow: visible; padding: 3px 6px; margin-left: -6px; background: var(--cg-bg); box-shadow: 0 2px 8px rgba(15,23,42,.12); }
+
+/* Attachment cell — one chip per file, CSVs highlighted because they open in the viewer. */
+.cg-files { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; overflow: hidden; vertical-align: middle; }
+.cg-file {
+  display: inline-flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0;
+  max-width: 100%; padding: 1px 7px 1px 5px; border: 1px solid var(--cg-border);
+  border-radius: 4px; background: #fff; color: var(--cg-text-soft); font-size: 11px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+}
+.cg-file i { font-style: normal; opacity: .65; flex: 0 0 auto; }
+.cg-file:hover { border-color: #b6c2d4; background: #f7f9fc; color: var(--cg-text); }
+.cg-file.csv { border-color: #cfe3d2; background: #f3faf4; color: #2f6b46; }
+.cg-file.csv:hover { border-color: #9ecdab; background: #e9f6ec; }
+.cg-file.cg-file-drop { border-style: dashed; }
+.cg-wrap .cg-files { flex-wrap: wrap; align-content: flex-start; overflow: visible; }
+/* Drop target feedback while dragging files over an attachment cell. */
+.cg-td.cg-dropping { box-shadow: inset 0 0 0 2px #4a86e8; background: #eef4ff !important; }
+
+/* Teable-style select / multi-select cell editor. */
+.cg-td.cg-choice-editing {
+  position: relative;
+  overflow: visible;
+  z-index: 70;
+  padding: 0;
+}
+.cg-choice-editor {
+  position: fixed;
+  z-index: 80;
+  width: 300px;
+  max-width: min(300px, calc(100vw - 24px));
+  padding: 7px;
+  background: #fff;
+  border: 1px solid #d8dadf;
+  border-radius: 7px;
+  box-shadow: 0 12px 34px rgba(20, 27, 38, .16), 0 2px 7px rgba(20, 27, 38, .08);
+  line-height: 1.3;
+  color: var(--cg-text);
+}
+.cg-choice-search {
+  display: block;
+  width: 100%;
+  height: 32px;
+  margin: 0 0 5px;
+  padding: 0 9px;
+  border: 1px solid #dfe1e5;
+  border-radius: 5px;
+  outline: none;
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--cg-text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 32px;
+}
+.cg-choice-search:focus { border-color: #6ca5e8; box-shadow: 0 0 0 2px rgba(6, 103, 217, .11); }
+.cg-choice-list { max-height: 224px; overflow: auto; padding: 1px 0; }
+.cg-choice-option {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--cg-text);
+  cursor: pointer;
+  text-align: left;
+}
+.cg-choice-option:hover,.cg-choice-option.active { background: #f2f6fb; }
+.cg-choice-add { color: #126fd1; font-weight: 600; }
+.cg-choice-plus { width: 16px; font-size: 17px; font-weight: 400; line-height: 1; text-align: center; }
+.cg-choice-option .cg-tag { max-width: 224px; }
+.cg-choice-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; opacity: .72; }
+.cg-choice-check { margin-left: auto; width: 16px; color: #0969da; font-size: 13px; font-weight: 700; text-align: center; }
+.cg-choice-empty { padding: 18px 8px; color: var(--cg-text-mute); font-size: 12px; text-align: center; }
+.cg-choice-footer {
+  min-height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+  padding: 6px 2px 0;
+  border-top: 1px solid #eceef1;
+}
+.cg-choice-clear,.cg-choice-done {
+  height: 25px;
+  padding: 0 9px;
+  border: 1px solid #dfe1e5;
+  border-radius: 5px;
+  background: #fff;
+  color: #4d5562;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 23px;
+  cursor: pointer;
+}
+.cg-choice-clear:hover { background: #f6f7f9; }
+.cg-choice-done { margin-left: auto; border-color: #126fd1; background: #126fd1; color: #fff; }
+.cg-choice-done:hover { background: #0d5ead; }
+.cg-choice-hint { margin-left: auto; color: var(--cg-text-mute); font-size: 10px; }
+
+/* ---- body ---- */
+
+.cg-body { position: relative; display: flex; flex: 1; min-height: 0; }
+
+.cg-gutter-col {
+  position: relative;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: var(--cg-bg-alt);
+  border-right: 3px solid var(--cg-border-faint);
+  z-index: 3;
+}
+
+.cg-gutter-track { position: relative; width: 100%; will-change: transform; }
+
+.cg-gutter-cell {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--cg-row-h);
+  display: grid;
+  place-items: center;
+  border-bottom: 1px solid var(--cg-border);
+  color: var(--cg-text-mute);
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+.cg-gutter-group { background: var(--cg-bg-alt); border-bottom-color: var(--cg-border); }
+
+/* Row number swaps to a checkbox on hover, the way Clay's gutter behaves. */
+.cg-gutter-cell .cg-rownum,
+.cg-gutter-cell .cg-check { grid-area: 1 / 1; }
+.cg-check {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--cg-border-strong, #d6d9df);
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.cg-gutter-cell .cg-check { opacity: 0; }
+.cg-gutter-cell:hover .cg-rownum,
+.cg-gutter-cell.cg-checked .cg-rownum { visibility: hidden; }
+.cg-gutter-cell:hover .cg-check,
+.cg-gutter-cell.cg-checked .cg-check { opacity: 1; }
+.cg-check.on { background: var(--cg-accent); border-color: var(--cg-accent); }
+.cg-check.on:after {
+  content: "";
+  position: absolute;
+  left: 3px; top: 1px;
+  width: 5px; height: 8px;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.cg-check.some { background: var(--cg-accent); border-color: var(--cg-accent); }
+.cg-check.some:after {
+  content: "";
+  position: absolute;
+  left: 2px; top: 5px;
+  width: 8px; height: 2px;
+  background: #fff;
+}
+.cg-check-all { opacity: 1; }
+/* Checked record tints the whole row, Clay's bg-selected #d7ebfe. */
+.cg-gutter-cell.cg-checked { background: #d7ebfe; }
+.cg-tr.cg-row-checked .cg-td { background: #d7ebfe; }
+.cg-tr.cg-row-checked:hover .cg-td { background: #b8ddff; }
+
+.cg-viewport {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  outline: none;
+  /* Dragging across cells must select CELLS, not text. Without this the browser's own
+     text selection paints blue over everything you drag past. */
+  user-select: none;
+  -webkit-user-select: none;
+  /* Ruled empty space below the last row so a short table isn't a white void. */
+  background-image: repeating-linear-gradient(to bottom, #fff 0, #fff var(--cg-row-h), var(--cg-border-faint) var(--cg-row-h), var(--cg-border-faint) var(--cg-row-pitch));
+}
+.cg-canvas { position: relative; }
+.cg-rows { position: absolute; inset: 0; }
+
+.cg-tr { position: absolute; left: 0; display: flex; height: var(--cg-row-h); }
+.cg-tr:hover .cg-td { background: var(--cg-bg-alt); }
+
+.cg-td {
+  flex: 0 0 auto;
+  height: var(--cg-row-h);
+  line-height: var(--cg-row-h);
+  padding: 0 8px;
+  background: var(--cg-bg);
+  border-right: 1px solid var(--cg-border);
+  border-bottom: 1px solid var(--cg-border);
+  box-sizing: border-box;
+  /* One clamped line. Never wrap — wrapping is what made rows 110px tall. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cg-td.cg-frozen {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  border-right: 3px solid var(--cg-border-faint);
+}
+.cg-wrap .cg-td {
+  white-space: normal;
+  line-height: 1.35;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.cg-td a { color: #0053b5; pointer-events: none; }
+
+.cg-td.cg-editing { padding: 0; border: 2px solid var(--cg-accent-soft); box-shadow: 0 0 0 2px rgba(62,162,253,.18); overflow: visible; }
+.cg-editor { width: 100%; height: calc(var(--cg-row-h) - 4px); border: 0; outline: 0; padding: 0 6px; font: inherit; background: #fff; }
+
+/* Duplicate highlighting — amber wash + a left marker on the offending cell. */
+.cg-td.cg-dupe { background: var(--cg-dupe) !important; color: var(--cg-dupe-text); box-shadow: inset 2px 0 0 var(--cg-dupe-line); }
+.cg-tr.cg-dupe-row .cg-td { background: #fffdf7; }
+.cg-tr.cg-dupe-row:hover .cg-td { background: #fff8ec; }
+.cg-dupe-badge { display: inline-block; margin-left: 6px; padding: 0 4px; border-radius: 3px; background: var(--cg-dupe-line); color: var(--cg-dupe-text); font-size: 9px; font-weight: 700; vertical-align: 1px; }
+
+/* ---- group rows ---- */
+
+.cg-group {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--cg-row-h);
+  padding: 0 10px;
+  background: var(--cg-bg-alt);
+  border-top: 1px solid var(--cg-border);
+  border-bottom: 1px solid var(--cg-border);
+  color: var(--cg-text-soft);
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  z-index: 3;
+}
+.cg-group:hover { background: var(--cg-border-faint); }
+.cg-group-caret { font-size: 9px; color: var(--cg-accent); }
+.cg-group small { color: var(--cg-text-mute); }
+
+/* ---- selection overlay ---- */
+
+.cg-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.cg-range {
+  position: absolute;
+  border: 1px solid var(--cg-accent);
+  background: rgba(6,103,217,.05);
+  box-sizing: border-box;
+}
+.cg-range-single { border-width: 2px; background: transparent; }
+/* Expand button removed — Space / gutter open the record. Keep class unused for old CSS. */
+.cg-expand { display: none !important; }
+
+.cg-range-extra {
+  border: 1px solid var(--cg-accent);
+  background: rgba(6,103,217,.08);
+  box-sizing: border-box;
+}
+.cg-range-column {
+  border-width: 0 1px;
+  background: rgba(6,103,217,.06);
+}
+
+.cg-fill {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 7px;
+  height: 7px;
+  background: var(--cg-accent);
+  border: 1px solid #fff;
+  border-radius: 1px;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+/* ---- resize guide + reorder drop line (full grid height, like Clay) ---- */
+
+.cg-guide { position: absolute; top: 0; bottom: 0; width: 4px; margin-left: -2px; background: var(--cg-accent-hot); z-index: 20; pointer-events: none; }
+.cg-drop { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--cg-accent-hot); z-index: 20; pointer-events: none; }
+
+/* ---- placeholder ---- */
+
+/* `display:grid` overrides the `hidden` attribute, which left an invisible placeholder
+   covering the grid and swallowing every click. Re-assert hiding explicitly. */
+.cg-placeholder { position: absolute; left: var(--cg-gutter-w); right: 0; top: var(--cg-header-h); bottom: 0; display: grid; place-items: center; background: #fff; z-index: 6; }
+.cg-placeholder[hidden] { display: none; }
+.cg-placeholder span { color: var(--cg-text-mute); font-size: 13px; }
+
+/* ============================================================================
+   Column types — cell renderings for the typed columns (see wisnia-column-types.js).
+   Each one keeps to the 36px row and the single clamped line the rest of the grid uses.
+   ============================================================================ */
+
+.cg-link { color: var(--cg-accent); text-decoration: none; }
+.cg-link:hover { text-decoration: underline; }
+
+/* Numeric types sit right so decimal points line up down the column. */
+.cg-td.cg-num, .cg-th.cg-num .cg-title { text-align: right; }
+.cg-td.cg-num { justify-content: flex-end; font-variant-numeric: tabular-nums; }
+
+.cg-checkbox {
+  display: inline-block; width: 15px; height: 15px; vertical-align: -3px;
+  border: 1px solid #c5c8cf; border-radius: 3px; background: #fff; cursor: pointer;
+}
+.cg-checkbox:hover { border-color: var(--cg-accent-soft); }
+.cg-checkbox.on { position: relative; background: var(--cg-accent); border-color: var(--cg-accent); }
+.cg-checkbox.on::after {
+  content: "✓"; position: absolute; inset: 0; color: #fff;
+  font-size: 11px; line-height: 13px; text-align: center;
+}
+
+.cg-score { display: inline-flex; align-items: center; gap: 7px; width: 100%; }
+.cg-score b { font-variant-numeric: tabular-nums; font-weight: 600; }
+.cg-scorebar {
+  flex: 1; min-width: 24px; max-width: 64px; height: 4px;
+  background: var(--cg-border); border-radius: 3px; overflow: hidden;
+}
+.cg-scorebar i { display: block; height: 100%; background: var(--cg-accent); }
+
+.cg-rating { display: inline-flex; gap: 1px; cursor: pointer; }
+.cg-star { color: #d6d9df; font-size: 13px; line-height: 1; }
+.cg-star.on { color: #f0b429; }
+.cg-rating:hover .cg-star { color: #e8c977; }
+
+.cg-img { width: 24px; height: 24px; object-fit: contain; border-radius: 4px; background: var(--cg-bg-alt); vertical-align: -7px; }
+
+/* Long text still clamps to one line in the grid; the record panel shows it in full. */
+.cg-longtext { color: var(--cg-text-soft); }
+
+/* Company / name cells — Clay's 18px tile + truncated label. */
+.cg-entity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+.cg-avatar {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #d7ebfe;
+  color: #0053b5;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.cg-entity-n {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   Add-column popover + column settings drawer (wisnia-column-ui.js)
+   Host chrome (.popover / .record-panel / .ai-field / .btn) used to live only
+   in the Clay HTML mockup. Workbench loads this sheet, so they live here too.
+   ============================================================================ */
+
+.popover {
+  display: none;
+  position: fixed;
+  z-index: 260;
+  width: 270px;
+  max-height: 420px;
+  overflow: auto;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--cg-border);
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(22, 24, 31, .12);
+}
+.popover.show { display: block; }
+
+.record-panel {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: 400px;
+  max-width: 94vw;
+  z-index: 261;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid var(--cg-border);
+  box-shadow: 0 4px 7px rgba(22, 24, 31, .10);
+  transform: translateX(105%);
+  transition: transform .15s cubic-bezier(.4, 0, .2, 1);
+}
+.record-panel.show { transform: translateX(0); }
+.record-head {
+  display: flex; align-items: center; gap: 8px;
+  height: 44px; padding: 0 12px;
+  border-bottom: 1px solid var(--cg-border);
+}
+.record-head b {
+  flex: 1; min-width: 0; font-size: 14px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.record-head .close {
+  border: 0; background: transparent; color: var(--cg-text-mute);
+  font-size: 19px; line-height: 1; padding: 0 4px; cursor: pointer;
+}
+.record-head .close:hover { color: #000; }
+.record-body {
+  flex: 1; min-height: 0; overflow: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.record-foot {
+  display: flex; align-items: center; gap: 7px;
+  padding: 10px 12px; border-top: 1px solid var(--cg-border);
+}
+.record-meta { flex: 1; color: var(--cg-text-mute); font-size: 11px; }
+
+/* Clay SingleRecordPanel — stacked label + inline-editable value per column. */
+.rec-field { display: flex; flex-direction: column; gap: 8px; }
+.rec-label { color: var(--cg-text-soft, #57564f); font-size: 12px; font-weight: 500; font-family: ui-monospace, Menlo, monospace; }
+.rec-value {
+  display: block; min-height: 24px; width: 100%; border-radius: 6px; padding: 4px 6px;
+  font-size: 13px; line-height: 1.5; color: #000; white-space: pre-wrap; word-break: break-word;
+  border: 1px solid transparent;
+}
+.rec-value:hover { background: var(--cg-bg-alt, #f7f7f6); }
+.rec-value:focus { outline: none; background: #fff; border-color: var(--cg-accent-soft, #3ea2fd); box-shadow: 0 0 0 3px rgba(62, 162, 253, .16); }
+.rec-value.empty { color: var(--cg-text-mute, #8a8880); }
+.rec-value.locked { cursor: default; }
+.rec-value.locked:hover { background: transparent; }
+.rec-value a { color: #2563eb; }
+.rec-field.focused .rec-label { color: #2563eb; font-weight: 600; }
+.rec-field.focused .rec-value { background: #fff; border-color: var(--cg-accent-soft, #3ea2fd); }
+.rec-provenance { font-size: 10px; color: var(--cg-text-mute); margin-top: 2px; }
+
+/* Attachment field in the record panel — the full file list, one row per file. */
+.wb-rec-files { display: flex; flex-direction: column; gap: 4px; }
+.wb-recfile {
+  display: flex; align-items: center; gap: 7px; padding: 5px 7px;
+  border: 1px solid var(--cg-border); border-radius: 6px; background: #fff; font-size: 12px;
+}
+.wb-recfile i { font-style: normal; opacity: .6; }
+.wb-recfile .n { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #000; }
+.wb-recfile .s { flex: 0 0 auto; color: var(--cg-text-mute); font-size: 11px; }
+.wb-recfile button {
+  flex: 0 0 auto; border: 1px solid var(--cg-border); background: #fff; border-radius: 5px;
+  padding: 2px 8px; font: inherit; font-size: 11px; color: var(--cg-text-soft); cursor: pointer;
+}
+.wb-recfile button:hover { border-color: #b6c2d4; background: #f7f9fc; color: #000; }
+.wb-recfile button.x { padding: 2px 7px; color: #b0342a; }
+.wb-recfile button.x:hover { border-color: #e2b4ae; background: #fdf3f2; }
+.wb-recfile-empty { font-size: 12px; color: var(--cg-text-mute); padding: 2px 0; }
+.wb-recfile-add {
+  align-self: flex-start; border: 1px dashed var(--cg-border); background: #fff;
+  border-radius: 6px; padding: 5px 10px; font: inherit; font-size: 12px;
+  color: var(--cg-text-soft); cursor: pointer;
+}
+.wb-recfile-add:hover { border-color: #9db4d4; color: #2563eb; background: #f7f9fc; }
+
+.ai-field { display: flex; flex-direction: column; gap: 6px; }
+.ai-field > label { color: var(--cg-text-soft); font-size: 12px; font-weight: 500; }
+.ai-field input, .ai-field select, .ai-field textarea {
+  width: 100%; border: 1px solid var(--cg-border); border-radius: 6px;
+  padding: 7px 9px; font: inherit; font-size: 13px; color: #000; background: #fff;
+}
+.ai-field textarea { resize: vertical; line-height: 1.5; min-height: 96px; }
+.ai-field input:focus, .ai-field select:focus, .ai-field textarea:focus {
+  outline: none; border-color: var(--cg-accent-soft);
+  box-shadow: 0 0 0 3px rgba(62, 162, 253, .16);
+}
+.ai-hint { color: var(--cg-text-mute); font-size: 11px; margin-top: 2px; }
+.ai-hint code {
+  background: var(--cg-bg-alt); border: 1px solid var(--cg-border);
+  border-radius: 4px; padding: 0 4px; font-size: 11px;
+}
+.ai-preview {
+  border: 1px solid var(--cg-border); border-radius: 8px; padding: 11px;
+  font-size: 12px; line-height: 1.55; color: var(--cg-text-soft);
+  background: var(--cg-bg-alt); white-space: pre-wrap; word-break: break-word; display: none;
+}
+.ai-preview.show { display: block; }
+.ai-preview.err { background: #fdf3f3; border-color: #e3bcbc; color: #a84444; }
+
+.record-foot .btn, .wc-drawer .btn {
+  height: 30px; padding: 0 12px; border: 1px solid var(--cg-border);
+  border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px;
+}
+.record-foot .btn.primary, .wc-drawer .btn.primary {
+  background: #1c1c1a; color: #fff; border-color: #1c1c1a;
+}
+
+.wc-pop { width: 300px; max-height: 460px; padding: 0; display: none; overflow: hidden; }
+.wc-pop.show { display: flex; flex-direction: column; }
+.wc-pop-search {
+  display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
+  height: 40px; padding: 0 11px; border-bottom: 1px solid var(--cg-border);
+}
+.wc-pop-ico { color: var(--cg-text-mute); font-size: 13px; }
+.wc-pop-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 13px; }
+.wc-pop-list { flex: 1; min-height: 0; overflow: auto; padding: 5px; }
+.wc-pop-label {
+  padding: 9px 8px 4px; color: var(--cg-text-mute);
+  font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+}
+.wc-type {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; text-align: left;
+}
+.wc-type:hover { background: #16181f0d; }
+.wc-type-ico {
+  flex: 0 0 auto; display: grid; place-items: center; width: 22px; height: 22px;
+  border-radius: 5px; background: var(--cg-bg-alt); color: var(--cg-text-soft); font-size: 12px;
+}
+.wc-type-ico.smart { background: #f3f0fd; color: #6b4ec7; }
+.wc-type-text { min-width: 0; }
+.wc-type-text b { display: block; font-size: 13px; font-weight: 500; color: #000; }
+.wc-type-text small {
+  display: block; margin-top: 1px; color: var(--cg-text-mute); font-size: 11px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wc-pop-empty { padding: 24px 10px; text-align: center; color: var(--cg-text-mute); font-size: 12px; }
+
+.wc-drawer { width: 420px; }
+.wc-check { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 13px; }
+.wc-check input { margin: 0; }
+.wc-checklist {
+  max-height: 190px; overflow: auto; padding: 5px 7px;
+  border: 1px solid var(--cg-border); border-radius: 6px; background: #fff;
+}
+
+/* Host-supplied provenance badge (CRM Workbench: account / contact / AI columns). */
+.cg-kind { flex: 0 0 auto; display: grid; place-items: center; width: 14px; height: 14px;
+  border-radius: 3px; color: #fff; font-size: 8px; font-weight: 700; }
