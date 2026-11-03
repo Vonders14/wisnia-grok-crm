@@ -1,29 +1,26 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getCrmClient } from '@/data'
-import { ComingSoonButton, ReadOnlyNotice } from '@/components/ComingSoon'
 import { HEALTH_COLOR, HEALTH_RULES } from '@/lib/enums'
 import { mapOppRow, resolveHealth, type OppRaw } from '@/lib/opp-rules'
+import { Avatar, Icon } from '@/icons/Icon'
+import { Btn, StatusDot } from '@/ui/Button'
 
 export function OppPanel({ oppId, raw }: { oppId: string; raw?: OppRaw }) {
   const client = getCrmClient()
-
   const { data: opp } = useQuery({
     queryKey: ['opp', oppId],
     queryFn: () => client.getOpp(oppId),
     initialData: raw,
   })
-
   const { data: emails } = useQuery({
     queryKey: ['opp-emails', oppId],
     queryFn: () => client.listOppEmails(oppId),
   })
-
   const { data: tasks } = useQuery({
     queryKey: ['opp-tasks', oppId],
     queryFn: () => client.listOppTasks(oppId),
   })
-
   const { data: calls } = useQuery({
     queryKey: ['opp-calls', oppId],
     queryFn: () => client.listOppCalls(oppId),
@@ -31,163 +28,173 @@ export function OppPanel({ oppId, raw }: { oppId: string; raw?: OppRaw }) {
 
   if (!opp) {
     return (
-      <aside className="panel">
-        <div className="empty">Opportunity not found</div>
+      <aside className="drawer" data-testid="opp-panel">
+        <div className="empty-v" style={{ padding: 24 }}>
+          Opportunity not found
+        </div>
       </aside>
     )
   }
 
   const mapped = mapOppRow(opp)
   const health = resolveHealth(opp)
-  const healthColor = health ? HEALTH_COLOR[health] : undefined
 
   return (
-    <aside className="panel" data-testid="opp-panel">
-      <div className="panel-header">
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-          <span className={`pill pill-${mapped.heat}`}>{mapped.heat}</span>
-          {health && (
-            <span
-              className="pill"
-              style={{
-                color: healthColor,
-                background: (healthColor || '') + '1a',
-                borderColor: (healthColor || '') + '33',
-              }}
-              title={HEALTH_RULES[health]}
-            >
-              {health}
-            </span>
-          )}
-          {mapped.engagementScore != null && (
-            <span style={{ color: 'var(--muted)' }}>Score {mapped.engagementScore}/10</span>
-          )}
+    <aside className="drawer" data-testid="opp-panel">
+      <div className="rh">
+        <div className="nm">
+          <Avatar name={mapped.contactName || mapped.name} size="lg" />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{mapped.name}</div>
+            <div className="sub" style={{ marginTop: 4 }}>
+              <span className={`heat-dot ${mapped.heat}`} />
+              {mapped.heat}
+              {mapped.engagementScore != null && <span>· Score {mapped.engagementScore}/10</span>}
+              {health && (
+                <StatusDot color={HEALTH_COLOR[health] || '#64748b'} label={health} />
+              )}
+            </div>
+          </div>
         </div>
-        <h2 className="title">{mapped.name}</h2>
-        <div className="panel-meta">
+        <div className="sub">
           {mapped.contactName} · {mapped.email}
-          <br />
+        </div>
+        <div className="sub">
           {mapped.company} · {mapped.dealName}
         </div>
+        <div className="racts">
+          <Btn soon icon="mail">
+            Draft reply
+          </Btn>
+          <Btn soon icon="task">
+            Create task
+          </Btn>
+          <Btn soon icon="send">
+            Add to sequence
+          </Btn>
+          <Btn soon icon="phone">
+            Log call
+          </Btn>
+          <Btn soon>Mark dead</Btn>
+          <a className="btn" href="https://mail.missiveapp.com/" target="_blank" rel="noreferrer">
+            <Icon name="external" size="sm" />
+            Missive
+          </a>
+          <Link className="btn" to={`/opportunities/${oppId}`}>
+            Full record
+          </Link>
+        </div>
       </div>
 
-      <div className="panel-actions">
-        <ComingSoonButton>Reply / AI draft</ComingSoonButton>
-        <ComingSoonButton>Snooze</ComingSoonButton>
-        <ComingSoonButton>+ Task</ComingSoonButton>
-        <ComingSoonButton>Log call</ComingSoonButton>
-        <ComingSoonButton>Log note</ComingSoonButton>
-        <ComingSoonButton>Mark dead</ComingSoonButton>
-        <ComingSoonButton>Save changes</ComingSoonButton>
-        <a className="btn" href={`https://mail.missiveapp.com/`} target="_blank" rel="noreferrer">
-          Missive ↗
-        </a>
-        <Link className="btn" to={`/opportunities/${oppId}`}>
-          Full record
-        </Link>
+      <div className="rsec">
+        <h4>Details</h4>
+        <Attr label="Stage" icon="list" value={mapped.stage} />
+        <Attr label="Interest" icon="star" value={mapped.dealInterest} />
+        <Attr
+          label="Contact stage"
+          icon="user"
+          value={opp.contact_stage}
+          hint="Lifetime stage is a hint only"
+        />
+        <Attr label="Next steps" icon="note" value={mapped.nextSteps} />
+        <Attr label="Urgency" icon="clock" value={mapped.replyUrgency} />
+        <Attr
+          label="Days silent"
+          icon="clock"
+          value={mapped.daysSilent == null ? 'never replied' : String(mapped.daysSilent)}
+        />
+        <Attr label="Intent" icon="sparkle" value={mapped.intent} />
+        {health && <Attr label="Health rule" icon="chart" value={HEALTH_RULES[health]} />}
       </div>
 
-      <div className="panel-body">
-        <ReadOnlyNotice compact />
-
-        <div className="field-row">
-          <div className="k">Stage</div>
-          <div className="v">{mapped.stage || '—'}</div>
-        </div>
-        <div className="field-row">
-          <div className="k">Interest</div>
-          <div className="v">{mapped.dealInterest || '—'}</div>
-        </div>
-        <div className="field-row">
-          <div className="k">Contact stage</div>
-          <div className="v">
-            {opp.contact_stage || '—'}
-            <div style={{ color: 'var(--muted)', fontSize: 11 }}>
-              Lifetime stage is a hint only — per-opp contact_stage is never overwritten.
-            </div>
-          </div>
-        </div>
-        <div className="field-row">
-          <div className="k">Next steps</div>
-          <div className="v">{mapped.nextSteps || '—'}</div>
-        </div>
-        <div className="field-row">
-          <div className="k">Urgency</div>
-          <div className="v">{mapped.replyUrgency}</div>
-        </div>
-        <div className="field-row">
-          <div className="k">Days silent</div>
-          <div className="v">
-            {mapped.daysSilent == null ? 'never replied' : mapped.daysSilent}
-          </div>
-        </div>
-        <div className="field-row">
-          <div className="k">Intent</div>
-          <div className="v">{mapped.intent || '—'}</div>
-        </div>
-        <div className="field-row">
-          <div className="k">AI summary</div>
-          <div className="v">{mapped.aiSummary || '—'}</div>
-        </div>
-        {health && (
-          <div className="field-row">
-            <div className="k">Health rule</div>
-            <div className="v">{HEALTH_RULES[health]}</div>
-          </div>
-        )}
-
-        <h3 style={{ marginTop: 18, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-          Email thread
-        </h3>
-        {!emails?.length && <div className="empty" style={{ padding: 8 }}>No emails in scope</div>}
+      <div className="rsec">
+        <h4>
+          Email thread <span className="cnt">{emails?.length ?? 0}</span>
+        </h4>
+        {!emails?.length && <div className="muted" style={{ padding: '4px 8px' }}>No emails in scope</div>}
         {emails?.map((e) => (
-          <div key={e.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--cg-border-faint)' }}>
-            <div style={{ fontWeight: 600 }}>{e.subject || '(no subject)'}</div>
-            <div style={{ color: 'var(--muted)', fontSize: 11 }}>
-              {e.direction || ''} · {e.from_email} → {e.to_email} ·{' '}
-              {e.received_at?.slice(0, 16)?.replace('T', ' ')}
+          <div key={e.id} className="ecard" style={{ margin: '0 6px 8px' }}>
+            <div className="s">{e.subject || '(no subject)'}</div>
+            <div className="m">
+              {e.direction} · {e.received_at?.slice(0, 16)?.replace('T', ' ')}
             </div>
-            <div style={{ marginTop: 4 }}>{e.body_preview}</div>
-            <div style={{ marginTop: 6, display: 'flex', gap: 6 }}>
-              <ComingSoonButton>Move</ComingSoonButton>
-              <ComingSoonButton>Reassign</ComingSoonButton>
-              <ComingSoonButton>Unlink</ComingSoonButton>
+            <div className="p">{e.body_preview}</div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <Btn soon size="sm">
+                Move
+              </Btn>
+              <Btn soon size="sm">
+                Unlink
+              </Btn>
             </div>
           </div>
         ))}
+      </div>
 
-        <h3 style={{ marginTop: 18, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-          Tasks
-        </h3>
-        {!tasks?.length && <div style={{ color: 'var(--muted)' }}>No open tasks</div>}
-        {tasks?.map((t) => (
-          <div key={t.id} style={{ padding: '6px 0' }}>
-            {t.title}{' '}
-            <span style={{ color: 'var(--muted)' }}>{t.due_at?.slice(0, 10)}</span>
+      <div className="rsec">
+        <h4>
+          Tasks <span className="cnt">{tasks?.length ?? 0}</span>
+        </h4>
+        {(tasks || []).map((t) => (
+          <div key={t.id} className="tk">
+            <span className="circ" />
+            <span className="tt">{t.title}</span>
+            <span className="due">{t.due_at?.slice(0, 10)}</span>
           </div>
         ))}
+        {!tasks?.length && <div className="muted" style={{ padding: '4px 8px' }}>No open tasks</div>}
+      </div>
 
-        <h3 style={{ marginTop: 18, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-          Calls
-        </h3>
-        {!calls?.length && <div style={{ color: 'var(--muted)' }}>No calls</div>}
-        {calls?.map((c) => (
-          <div key={c.id} style={{ padding: '6px 0' }}>
-            <strong>{c.subject}</strong>
-            <div style={{ color: 'var(--muted)' }}>{c.notes}</div>
+      <div className="rsec">
+        <h4>
+          Calls <span className="cnt">{calls?.length ?? 0}</span>
+        </h4>
+        {(calls || []).map((c) => (
+          <div key={c.id} className="note">
+            <div className="h">{c.subject}</div>
+            <div className="p">{c.notes}</div>
           </div>
         ))}
+      </div>
 
-        <h3 style={{ marginTop: 18, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-          Compose
-        </h3>
-        <textarea disabled placeholder="Compose disabled in read-only build" style={{ width: '100%', height: 80 }} />
-        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <ComingSoonButton>AI Draft</ComingSoonButton>
-          <ComingSoonButton>Send</ComingSoonButton>
-          <ComingSoonButton>Save draft</ComingSoonButton>
+      <div className="rsec">
+        <h4>Compose</h4>
+        <textarea className="pin" disabled placeholder="Compose disabled in read-only build" style={{ minHeight: 72 }} />
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <Btn soon icon="sparkle">
+            AI Draft
+          </Btn>
+          <Btn soon icon="send">
+            Send
+          </Btn>
+          <Btn soon>Save draft</Btn>
         </div>
       </div>
     </aside>
+  )
+}
+
+function Attr({
+  label,
+  icon,
+  value,
+  hint,
+}: {
+  label: string
+  icon: string
+  value?: string | null
+  hint?: string
+}) {
+  return (
+    <div className="ar ro">
+      <div className="l">
+        <Icon name={icon} size="sm" />
+        {label}
+      </div>
+      <div className="v">
+        {value || <span className="empty-v">—</span>}
+        {hint && <span className="muted" style={{ fontSize: 11, width: '100%' }}>{hint}</span>}
+      </div>
+    </div>
   )
 }

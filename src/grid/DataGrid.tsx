@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import type { DataGridProps, GridColumn } from './types'
+import type { DataGridProps } from './types'
+import { Icon } from '@/icons/Icon'
 
 export function DataGrid<T>({
   rows,
@@ -17,85 +18,60 @@ export function DataGrid<T>({
   density = 36,
 }: DataGridProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {}
-    for (const c of columns) init[c.key] = c.defaultVisible !== false
-    return init
-  })
-  const [pickerOpen, setPickerOpen] = useState(false)
-
   const shown = useMemo(
-    () => columns.filter((c) => visible[c.key] !== false),
-    [columns, visible],
+    () => columns.filter((c) => c.defaultVisible !== false),
+    [columns],
   )
 
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => density,
-    overscan: 12,
+    overscan: 14,
   })
 
-  const totalWidth = shown.reduce((s, c) => s + (c.width ?? 140), 0)
+  const totalWidth =
+    36 + shown.reduce((s, c) => s + (c.width ?? 140), 0) + 80
+  const allSelected = !!rows.length && rows.every((r) => selectedIds?.has(rowId(r)))
+  const someSelected = rows.some((r) => selectedIds?.has(rowId(r)))
 
   return (
-    <div className="cg-root">
-      <div className="cg-toolbar">
-        <button type="button" className="btn" onClick={() => setPickerOpen((v) => !v)}>
-          Columns
-        </button>
-        <span style={{ color: 'var(--cg-text-mute)' }}>
-          {rows.length.toLocaleString()} rows in view
-        </span>
-        {pickerOpen && (
-          <div className="col-picker">
-            {columns.map((c) => (
-              <label key={c.key}>
+    <div className="content" ref={parentRef} data-testid="data-grid">
+      <div style={{ height: virtualizer.getTotalSize() + 68, width: totalWidth, position: 'relative' }}>
+        <table className="tbl" style={{ width: totalWidth }}>
+          <thead>
+            <tr>
+              <th className="ck">
                 <input
+                  className={`cb${someSelected && !allSelected ? ' mixed' : ''}`}
                   type="checkbox"
-                  checked={visible[c.key] !== false}
-                  onChange={() =>
-                    setVisible((v) => ({ ...v, [c.key]: !(v[c.key] !== false) }))
-                  }
+                  checked={allSelected}
+                  onChange={() => onToggleSelectAll?.()}
+                  aria-label="Select all"
                 />
-                {c.label}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
+              </th>
+              {shown.map((c, idx) => (
+                <th
+                  key={c.key}
+                  className={idx === 0 ? 'nm' : undefined}
+                  style={{ width: c.width ?? 140, minWidth: c.width ?? 140 }}
+                  onClick={() => c.sortable !== false && onSort?.(c.key)}
+                >
+                  <div className="th">
+                    <Icon name="list" size="sm" />
+                    {c.label}
+                    {sortKey === c.key && (
+                      <span className="sarr">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
+              ))}
+              <th className="add fill">+</th>
+            </tr>
+          </thead>
+        </table>
 
-      <div className="cg-header-wrap">
-        <div className="cg-header-gutter" onClick={onToggleSelectAll} title="Select page">
-          <input
-            type="checkbox"
-            readOnly
-            checked={!!rows.length && rows.every((r) => selectedIds?.has(rowId(r)))}
-          />
-        </div>
-        <div className="cg-header-scroll">
-          <div className="cg-header" style={{ width: totalWidth }}>
-            {shown.map((c) => (
-              <HeaderCell
-                key={c.key}
-                col={c}
-                sorted={sortKey === c.key}
-                dir={sortDir}
-                onSort={onSort}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="cg-body" ref={parentRef}>
-        <div
-          style={{
-            height: virtualizer.getTotalSize(),
-            width: totalWidth + 44,
-            position: 'relative',
-          }}
-        >
+        <div style={{ position: 'relative' }}>
           {virtualizer.getVirtualItems().map((vi) => {
             const row = rows[vi.index]
             const id = rowId(row)
@@ -104,74 +80,102 @@ export function DataGrid<T>({
             return (
               <div
                 key={id}
-                className={`cg-row${selected ? ' selected' : ''}${active ? ' active' : ''}`}
+                className={`tbl-row${selected ? ' sel' : ''}${active ? ' active-row' : ''}`}
                 style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
-                  width: '100%',
+                  width: totalWidth,
                   height: vi.size,
                   transform: `translateY(${vi.start}px)`,
+                  display: 'flex',
+                  borderBottom: '1px solid var(--b)',
+                  background: selected ? 'var(--selrow)' : '#fff',
+                  cursor: 'pointer',
                 }}
                 onClick={(e) => onRowClick?.(row, e)}
+                onMouseEnter={(e) => {
+                  if (!selected) (e.currentTarget as HTMLDivElement).style.background = '#fafafb'
+                }}
+                onMouseLeave={(e) => {
+                  ;(e.currentTarget as HTMLDivElement).style.background = selected
+                    ? 'var(--selrow)'
+                    : '#fff'
+                }}
               >
                 <div
-                  className="cg-gutter"
+                  className="ck"
+                  style={{
+                    width: 36,
+                    flex: 'none',
+                    display: 'grid',
+                    placeItems: 'center',
+                    position: 'sticky',
+                    left: 0,
+                    background: 'inherit',
+                    zIndex: 2,
+                  }}
                   onClick={(e) => {
                     e.stopPropagation()
                     onToggleSelect?.(id)
                   }}
                 >
-                  <input type="checkbox" readOnly checked={!!selected} />
+                  <input className="cb" type="checkbox" readOnly checked={!!selected} />
                 </div>
-                {shown.map((c) => (
+                {shown.map((c, idx) => (
                   <div
                     key={c.key}
-                    className={`cg-td${c.sticky ? ' sticky' : ''}`}
                     style={{
                       width: c.width ?? 140,
+                      minWidth: c.width ?? 140,
+                      flex: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 10px',
+                      borderRight: '1px solid var(--b)',
+                      overflow: 'hidden',
                       justifyContent:
-                        c.align === 'center'
-                          ? 'center'
-                          : c.align === 'right'
-                            ? 'flex-end'
+                        c.align === 'right'
+                          ? 'flex-end'
+                          : c.align === 'center'
+                            ? 'center'
                             : 'flex-start',
+                      position: idx === 0 ? 'sticky' : undefined,
+                      left: idx === 0 ? 36 : undefined,
+                      background: idx === 0 ? 'inherit' : undefined,
+                      zIndex: idx === 0 ? 2 : undefined,
+                      boxShadow: idx === 0 ? '1px 0 0 var(--b)' : undefined,
                     }}
                     title={String(c.accessor(row) ?? '')}
                   >
-                    {c.cell ? c.cell(row) : <span className="itxt">{fmt(c.accessor(row))}</span>}
+                    {c.cell ? c.cell(row) : <span>{fmt(c.accessor(row))}</span>}
                   </div>
                 ))}
+                <div style={{ flex: 1 }} />
               </div>
             )
           })}
         </div>
-      </div>
-    </div>
-  )
-}
 
-function HeaderCell<T>({
-  col,
-  sorted,
-  dir,
-  onSort,
-}: {
-  col: GridColumn<T>
-  sorted: boolean
-  dir?: 'asc' | 'desc'
-  onSort?: (key: string) => void
-}) {
-  return (
-    <div
-      className={`cg-th${col.sticky ? ' sticky' : ''}${sorted ? ' sorted' : ''}`}
-      style={{ width: col.width ?? 140 }}
-      onClick={() => col.sortable !== false && onSort?.(col.key)}
-    >
-      <span className="itxt">
-        {col.label}
-        {sorted ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}
-      </span>
+        <div
+          style={{
+            position: 'absolute',
+            top: virtualizer.getTotalSize() + 34,
+            left: 0,
+            width: totalWidth,
+            height: 34,
+            display: 'flex',
+            alignItems: 'center',
+            borderTop: '1px solid var(--b)',
+            color: 'var(--t3)',
+            fontSize: 12.5,
+            background: '#fff',
+          }}
+        >
+          <div style={{ width: 36 }} />
+          <div style={{ padding: '0 10px' }}>{rows.length.toLocaleString()} count</div>
+        </div>
+      </div>
     </div>
   )
 }

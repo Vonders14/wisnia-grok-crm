@@ -1,38 +1,29 @@
 import type { ReactNode } from 'react'
+import { Btn } from '@/ui/Button'
 
-/** Marks write actions that exist in the original but are disabled in this read-only build. */
+/** @deprecated Prefer <Btn soon> — kept for call sites during restyle. */
 export function ComingSoonBadge() {
-  return <span className="badge-soon">Coming soon</span>
+  return null
 }
 
 export function ComingSoonButton({
   children,
-  title = 'Read-only build — writes are disabled until Devon approves a secure write path.',
+  title = 'Coming soon (read-only)',
 }: {
   children: ReactNode
   title?: string
 }) {
   return (
-    <button type="button" className="btn btn-coming" disabled title={title}>
+    <Btn soon title={title}>
       {children}
-      <ComingSoonBadge />
-    </button>
+    </Btn>
   )
 }
 
+/** Subtle pill only — no full-width banner. */
 export function ReadOnlyNotice({ compact }: { compact?: boolean }) {
   if (compact) {
-    return (
-      <p style={{ color: 'var(--waiting)', fontSize: 12, margin: '8px 0' }}>
-        Read-only — edits, uploads, email send, and sequence push are stubbed.
-      </p>
-    )
+    return <span className="ro-pill">Read-only</span>
   }
-  return (
-    <div className="readonly-banner" role="status">
-      Read-only preview on mock data. Cell edits, mark dead, notes, tasks, sequence push, email
-      send, Apollo save, Run Prompt, create opps, and data-room upload are disabled. No Supabase
-      writes are possible from this app.
-    </div>
-  )
+  return null
 }
